@@ -3,5 +3,5 @@
 version = 4
 
 [[package]]
-name = "mp3-artwork"
+name = "music-artwork"
 version = "0.1.0"
