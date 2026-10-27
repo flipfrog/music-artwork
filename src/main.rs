@@ -32,7 +32,7 @@ fn main() {
 
         if file_name.ends_with(&extension) {
             let src_file = format!("{}/{}", &args[1], &file_name);
-            let dest_file = format!("{}/new_{}", &dest_dir, &file_name);
+            let dest_file = format!("{}/{}", &dest_dir, &file_name);
 
             if exists(&dest_file).unwrap() {
                 println!("skipping, file already exists: {}", &dest_file);
