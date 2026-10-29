@@ -1,23 +1,36 @@
-// 楽曲ファイルのアートワークを設定する
-// ffmpeg -i in.mp3 -i <img-file-path> -map 0:a -map 1:v -c copy -disposition:1 attached_pic -id3v2_version 3 out.mp3
+// Set an artwork image to music files.
 use std::fs;
 use std::fs::{create_dir_all, exists};
-use std::process::{exit, Command};
+use std::process::{Command};
+use clap::{Parser};
+
+// declaration of command arguments.
+#[derive(Parser, Debug)]
+#[command(version, about, long_about = None)]
+struct Args {
+    /// input directory
+    #[arg(short, long)]
+    src: String,
+    /// output directory (if the directory does not exist, it will be created)
+    #[arg(short, long)]
+    dest: String,
+    /// extension of music files such as mp3, flac, etc...
+    #[arg(short, long, default_value = "mp3")]
+    ext: String,
+    /// artwork image file path
+    #[arg(short, long)]
+    img: String,
+}
 
 fn main() {
     // analyze args.
-    let args: Vec<String> = std::env::args().collect();
+    let args = Args::parse();
 
-    if args.len() < 5 {
-        println!("less arguments.");
-        println!("Usage: {} <src_dir> <dest_dir> <extension ex: mp3> <artwork_file>", &args[0]);
-        exit(1);
-    }
-
-    let dir = fs::read_dir(&args[1]).expect("dir opening error.");
-    let dest_dir = &args[2];
-    let extension = format!(".{}", &args[3]);
-    let artwork = &args[4];
+    let src_dir = &args.src;
+    let dir = fs::read_dir(src_dir).expect("dir opening error.");
+    let dest_dir = &args.dest;
+    let extension = format!(".{}", &args.ext);
+    let artwork = &args.img;
 
     // create dir for modified files, if it does not exist.
     if !exists(dest_dir).unwrap() {
@@ -31,24 +44,25 @@ fn main() {
         let file_name = os_file_name.to_str().unwrap();
 
         if file_name.ends_with(&extension) {
-            let src_file = format!("{}/{}", &args[1], &file_name);
-            let dest_file = format!("{}/{}", &dest_dir, &file_name);
+            let src_file = &format!("{}/{}", src_dir, file_name);
+            let dest_file = &format!("{}/{}", dest_dir, file_name);
 
-            if exists(&dest_file).unwrap() {
-                println!("skipping, file already exists: {}", &dest_file);
+            if exists(dest_file).unwrap() {
+                println!("skipping, file already exists: {}", dest_file);
                 continue;
             }
 
+            // ffmpeg -i in.mp3 -i <img-file-path> -map 0:a -map 1:v -c copy -disposition:1 attached_pic -id3v2_version 3 out.mp3
             let _ffmpeg_output = Command::new("ffmpeg")
                 .args([
-                    "-i", &src_file,
-                    "-i", &artwork,
+                    "-i", src_file,
+                    "-i", artwork,
                     "-map", "0:a",
                     "-map", "1:v",
                     "-c", "copy",
                     "-disposition:1", "attached_pic",
                     "-id3v2_version", "3",
-                    &dest_file
+                    dest_file
                 ])
                 .output()
                 .expect("failed executing ffmpeg");
