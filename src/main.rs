@@ -3,7 +3,7 @@ use clap::{Parser};
 use same_file::is_same_file;
 use std::error::Error;
 use std::fs;
-use std::fs::{create_dir_all, exists};
+use std::fs::{create_dir_all, exists, metadata};
 use std::process::{exit, Command};
 
 // declaration of command arguments.
@@ -55,7 +55,13 @@ fn main() {
             let dest_file = format!("{}/{}", &dest_dir, file_name);
 
             if exists(&dest_file).unwrap() {
-                println!("skipping, file already exists: {}", dest_file);
+                println!("*** Skipping, file already exists: \"{}\"", dest_file);
+                continue;
+            }
+
+            // Skip if dir entry is a directory.
+            let metadata = metadata(&src_file);
+            if !metadata.unwrap().is_file() {
                 continue;
             }
 
@@ -86,7 +92,9 @@ fn main() {
     }
 
     if processed_count == 0 {
-        println!("No sound file processed.");
+        println!("*** No file processed.");
+    } else {
+        println!("{} file processed.", processed_count);
     }
 }
 
