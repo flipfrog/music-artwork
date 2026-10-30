@@ -16,7 +16,7 @@ struct Args {
     /// Output directory (if the directory does not exist, it will be created)
     #[arg(short, long)]
     dest: String,
-    /// Extension of music files such as mp3, flac, etc...
+    /// Extension of music files such as mp3, aac, flac, etc...
     #[arg(short, long)]
     ext: String,
     /// Artwork image file path
