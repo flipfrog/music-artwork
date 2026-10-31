@@ -41,7 +41,7 @@ fn main() {
         create_dir_all(&dest_dir).unwrap();
     }
 
-    let dir = fs::read_dir(&src_dir).expect("dir opening error.");
+    let dir = fs::read_dir(&src_dir).expect("src directory opening error.");
 
     // add artwork and output modified to dest dir, to each music files.
     let mut processed_count = 0;
@@ -54,40 +54,23 @@ fn main() {
             let src_file = format!("{}/{}", &src_dir, file_name);
             let dest_file = format!("{}/{}", &dest_dir, file_name);
 
-            if exists(&dest_file).unwrap() {
-                println!("*** Skipping, file already exists: \"{}\"", dest_file);
+            let (should_skip, msg) =  check_if_skipping(&src_file, &dest_file).unwrap();
+            if should_skip {
+                println!("{msg}");
                 continue;
             }
 
-            // Skip if dir entry is a directory.
-            let metadata = metadata(&src_file);
-            if !metadata.unwrap().is_file() {
-                continue;
+            // run ffmpeg with treated parameters.
+            match exec_ffmpeg(&src_file, &dest_file, &artwork) {
+                Ok(()) => {},
+                Err(e) => {
+                    println!("{e}");
+                    exit(1);
+                }
             }
 
-            // ffmpeg -i in.mp3 -i <img-file-path> -map 0:a -map 1:v -c copy -disposition:1 attached_pic -id3v2_version 3 out.mp3
-            let ffmpeg_output = Command::new("ffmpeg")
-                .args([
-                    "-i", &src_file,
-                    "-i", &artwork,
-                    "-map", "0:a",
-                    "-map", "1:v",
-                    "-c", "copy",
-                    "-disposition:1", "attached_pic",
-                    "-id3v2_version", "3",
-                    &dest_file
-                ])
-                .output()
-                .expect("failed executing ffmpeg");
-
-            if !ffmpeg_output.status.success() {
-                println!("ffmpeg failure.");
-                exit(1);
-            }
-
-            println!("Succeeded: \"{}\"", &dest_file);
+            println!("Done: \"{}\"", &dest_file);
             processed_count += 1;
-            // println!("ffmpeg log: {}", String::from_utf8_lossy(&_ffmpeg_output.stderr))
         }
     }
 
@@ -118,6 +101,53 @@ fn check_arg_values(args: &Args) -> Result<(), Box<dyn Error>> {
                 exit(1);
             }
         }
+    }
+
+    Ok(())
+}
+
+// check if skipping src_file is directory.
+fn check_if_skipping(src_file: &str, dest_file: &str) -> Result<(bool, String), Box<dyn Error>> {
+    // check existence
+    if exists(dest_file)? {
+        let ret = (true, String::from(format!("*** Skipping, \"{}\" already exists.", dest_file)));
+        return Ok(ret);
+    }
+
+    // check file type
+    let metadata = metadata(&src_file)?;
+    if metadata.is_dir() {
+        let ret = (true, String::from(format!("*** Skipping, \"{}\" is directory.", dest_file)));
+        return Ok(ret);
+    }
+
+    Ok((false, "".to_string()))
+}
+
+// execute ffmpeg.
+fn exec_ffmpeg(src_file: &str, dest_file: &str, artwork: &str) -> Result<(), Box<dyn Error>> {
+    let args = vec![
+        "-i", src_file,
+        "-i", artwork,
+        "-map", "0:a",
+        "-map", "1:v",
+        "-c", "copy",
+        "-disposition:1", "attached_pic",
+        "-id3v2_version", "3",
+        dest_file
+    ];
+
+    // ffmpeg -i in.mp3 -i <img-file-path> -map 0:a -map 1:v -c copy -disposition:1 attached_pic -id3v2_version 3 out.mp3
+    let ffmpeg_output = match Command::new("ffmpeg").args(args).output() {
+        Ok(output) => output,
+        Err(e) => {
+            return Err(format!("could not exec ffmpeg: {e}").into())
+        }
+    };
+
+    if !ffmpeg_output.status.success() {
+        let err_log = String::from_utf8_lossy(&ffmpeg_output.stderr);
+        return Err(format!("ffmpeg failed: {}", err_log).into());
     }
 
     Ok(())
