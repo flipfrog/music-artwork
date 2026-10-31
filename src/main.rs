@@ -3,7 +3,7 @@ use clap::{Parser};
 use same_file::is_same_file;
 use std::error::Error;
 use std::fs;
-use std::fs::{create_dir_all, exists, metadata};
+use std::fs::{create_dir_all, exists, DirEntry};
 use std::process::{exit, Command};
 
 // declaration of command arguments.
@@ -54,7 +54,7 @@ fn main() {
             let src_file = format!("{}/{}", &src_dir, file_name);
             let dest_file = format!("{}/{}", &dest_dir, file_name);
 
-            let (should_skip, skip_reason) = check_if_skipping(&src_file, &dest_file).unwrap();
+            let (should_skip, skip_reason) = check_if_skipping(&entry, &dest_file).unwrap();
             if should_skip {
                 println!("{skip_reason}");
                 continue;
@@ -101,7 +101,7 @@ fn check_arg_values(args: &Args) -> Result<(), Box<dyn Error>> {
 }
 
 // check if skipping src_file is directory.
-fn check_if_skipping(src_file: &str, dest_file: &str) -> Result<(bool, String), Box<dyn Error>> {
+fn check_if_skipping(entry: &DirEntry, dest_file: &str) -> Result<(bool, String), Box<dyn Error>> {
     // check existence
     if exists(dest_file)? {
         let ret = (true, String::from(format!("*** Skipping, \"{}\" already exists.", dest_file)));
@@ -109,7 +109,7 @@ fn check_if_skipping(src_file: &str, dest_file: &str) -> Result<(bool, String), 
     }
 
     // check file type
-    let metadata = metadata(&src_file)?;
+    let metadata = entry.metadata()?;
     if metadata.is_dir() {
         let ret = (true, String::from(format!("*** Skipping, \"{}\" is directory.", dest_file)));
         return Ok(ret);
