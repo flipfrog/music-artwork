@@ -54,9 +54,9 @@ fn main() {
             let src_file = format!("{}/{}", &src_dir, file_name);
             let dest_file = format!("{}/{}", &dest_dir, file_name);
 
-            let (should_skip, msg) =  check_if_skipping(&src_file, &dest_file).unwrap();
+            let (should_skip, skip_reason) = check_if_skipping(&src_file, &dest_file).unwrap();
             if should_skip {
-                println!("{msg}");
+                println!("{skip_reason}");
                 continue;
             }
 
