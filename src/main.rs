@@ -61,13 +61,7 @@ fn main() {
             }
 
             // run ffmpeg with treated parameters.
-            match exec_ffmpeg(&src_file, &dest_file, &artwork) {
-                Ok(()) => {},
-                Err(e) => {
-                    println!("{e}");
-                    exit(1);
-                }
-            }
+            exec_ffmpeg(&src_file, &dest_file, &artwork).unwrap();
 
             println!("Done: \"{}\"", &dest_file);
             processed_count += 1;
