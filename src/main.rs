@@ -29,7 +29,10 @@ fn main() {
     let args = Args::parse();
 
     // check commandline arguments.
-    check_arg_values(&args).unwrap();
+    check_arg_values(&args).unwrap_or_else(|e| {
+        println!("Argument check error: {e}");
+        exit(1);
+    });
 
     let src_dir = args.src;
     let dest_dir = args.dest;
@@ -37,31 +40,57 @@ fn main() {
     let artwork = args.img;
 
     // create dir for modified files, if it does not exist.
-    if !exists(&dest_dir).unwrap() {
-        create_dir_all(&dest_dir).unwrap();
+    let is_exist = exists(&dest_dir).unwrap_or_else(|e| {
+        println!("Destination directory existence check error: {e}");
+        exit(1);
+    });
+
+    if !is_exist {
+        create_dir_all(&dest_dir).unwrap_or_else(|e| {
+            println!("Destination directory creation error: {e}");
+            exit(1);
+        });
     }
 
-    let dir = fs::read_dir(&src_dir).expect("src directory opening error.");
+    // open src directory.
+    let dir = fs::read_dir(&src_dir).unwrap_or_else(|e| {
+        println!("Src directory opening error: {e}");
+        exit(1);
+    });
 
     // add artwork and output modified to dest dir, to each music files.
     let mut processed_count = 0;
     for entry_option in dir {
-        let entry = entry_option.expect("entry taking error.");
+        let entry = entry_option.unwrap_or_else(|e| {
+            println!("Directory entry acquiring error: {e}");
+            exit(1);
+        });
         let os_file_name = entry.file_name();
-        let file_name = os_file_name.to_str().unwrap();
+        let file_name = if let Some(file_name) = os_file_name.to_str() {
+            file_name
+        } else {
+            println!("Could not acquire file name.");
+            exit(1);
+        };
 
         if file_name.ends_with(&extension) {
             let src_file = format!("{}/{}", &src_dir, file_name);
             let dest_file = format!("{}/{}", &dest_dir, file_name);
 
-            let (should_skip, skip_reason) = check_if_skipping(&entry, &dest_file).unwrap();
+            let (should_skip, skip_reason) = check_if_skipping(&entry, &dest_file).unwrap_or_else(|e| {
+                println!("Checking to skip error: {e}");
+                exit(1);
+            });
             if should_skip {
                 println!("{skip_reason}");
                 continue;
             }
 
             // run ffmpeg with treated parameters.
-            exec_ffmpeg(&src_file, &dest_file, &artwork).unwrap();
+            exec_ffmpeg(&src_file, &dest_file, &artwork).unwrap_or_else(|e| {
+                println!("ffmpeg execution error: {e}");
+                exit(1);
+            });
 
             println!("Done: \"{}\"", &dest_file);
             processed_count += 1;
@@ -78,21 +107,17 @@ fn main() {
 // check argument values.
 fn check_arg_values(args: &Args) -> Result<(), Box<dyn Error>> {
     if !exists(&args.src)? {
-        println!("No such src directory: {}", args.src);
-        exit(2);
+        return Err(format!("No such src directory: {}", args.src).into());
     }
 
     // assuming src and dest directories are different.
     if exists(&args.dest)? {
         match is_same_file(&args.src, &args.dest) {
-            Ok(true) => {
-                println!("Directories of src and dest must be different.");
-                exit(1);
+            Ok(is_same) => if is_same {
+                return Err("Directories of src and dest must be different.".into());
             },
-            Ok(false) => {},
             Err(e) => {
-                println!("Directory comparing error {}", e);
-                exit(1);
+                return Err(format!("Directory comparing error {}", e).into());
             }
         }
     }
