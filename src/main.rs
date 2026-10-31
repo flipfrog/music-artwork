@@ -54,11 +54,8 @@ fn main() -> Result<()> {
     for entry_option in dir {
         let entry = entry_option.context("Directory entry acquiring error.")?;
         let os_file_name = entry.file_name();
-        let file_name = if let Some(file_name) = os_file_name.to_str() {
-            file_name
-        } else {
-            println!("Could not acquire file name.");
-            exit(1);
+        let Some(file_name) = os_file_name.to_str() else {
+            bail!("Could not acquire file name.");
         };
 
         if file_name.ends_with(&extension) {
@@ -81,11 +78,10 @@ fn main() -> Result<()> {
         }
     }
 
-    if processed_count == 0 {
-        println!("*** No file processed.");
-    } else {
-        println!("{} file processed.", processed_count);
-    }
+    match processed_count {
+        0 => println!("*** No file processed."),
+        _ => println!("{} file processed.", processed_count)
+    };
 
     Ok(())
 }
