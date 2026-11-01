@@ -94,9 +94,8 @@ fn check_arg_values(args: &Args) -> Result<()> {
     // assuming src and dest directories are different.
     if exists(&args.dest)? {
         match is_same_file(&args.src, &args.dest) {
-            Ok(is_same) => if is_same {
-                bail!("Directories of src and dest must be different.");
-            },
+            Ok(true) => bail!("Directories of src and dest must be different."),
+            Ok(false) => {},
             Err(e) => bail!("Directory comparing error {}", e)
         }
     }
