@@ -104,7 +104,7 @@ fn check_arg_values(args: &Args) -> Result<()> {
     Ok(())
 }
 
-// check if skipping src_file is directory.
+// check if skipping src_file.
 fn check_if_skipping(entry: &DirEntry, src_file: &str, dest_file: &str) -> Result<(bool, String)> {
     // check existence
     if exists(dest_file)? {
