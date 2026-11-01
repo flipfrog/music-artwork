@@ -22,6 +22,9 @@ struct Args {
     /// Artwork image file path
     #[arg(short, long)]
     img: String,
+    /// Path to ffmpeg
+    #[arg(short, long, default_value = "ffmpeg")]
+    ffmpeg: String,
 }
 
 fn main() -> Result<()> {
@@ -35,6 +38,7 @@ fn main() -> Result<()> {
     let dest_dir = args.dest;
     let extension = format!(".{}", &args.ext);
     let artwork = args.img;
+    let ffmpeg_path = args.ffmpeg;
 
     // create dir for modified files, if it does not exist.
     match exists(&dest_dir) {
@@ -70,7 +74,7 @@ fn main() -> Result<()> {
             }
 
             // run ffmpeg with treated parameters.
-            exec_ffmpeg(&src_file, &dest_file, &artwork).context("ffmpeg execution error.")?;
+            exec_ffmpeg(&ffmpeg_path, &src_file, &dest_file, &artwork).context("ffmpeg execution error.")?;
 
             println!("Done: \"{}\"", &dest_file);
             processed_count += 1;
@@ -122,7 +126,7 @@ fn check_if_skipping(entry: &DirEntry, src_file: &str, dest_file: &str) -> Resul
 }
 
 // execute ffmpeg.
-fn exec_ffmpeg(src_file: &str, dest_file: &str, artwork: &str) -> Result<()> {
+fn exec_ffmpeg(ffmpeg_path: &str, src_file: &str, dest_file: &str, artwork: &str) -> Result<()> {
     let args = vec![
         "-i", src_file,
         "-i", artwork,
@@ -135,7 +139,7 @@ fn exec_ffmpeg(src_file: &str, dest_file: &str, artwork: &str) -> Result<()> {
     ];
 
     // ffmpeg -i in.mp3 -i <img-file-path> -map 0:a -map 1:v -c copy -disposition:1 attached_pic -id3v2_version 3 out.mp3
-    let ffmpeg_output = Command::new("ffmpeg").args(args).output().context("could not exec ffmpeg.")?;
+    let ffmpeg_output = Command::new(ffmpeg_path).args(args).output().context("could not exec ffmpeg.")?;
 
     if !ffmpeg_output.status.success() {
         let err_log = String::from_utf8_lossy(&ffmpeg_output.stderr);
