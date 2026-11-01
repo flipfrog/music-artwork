@@ -1,7 +1,7 @@
 # music-artwork
 A cli command for adding artwork image to music files using ffmpeg.
 
-- The command searches sound files in directory specified.
+- The command searches sound files in a directory specified.
 - So it is a ffmpeg wrapper app.
 
 ## REQUIREMENT
