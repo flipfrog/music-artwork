@@ -3,7 +3,7 @@ use clap::{Parser};
 use same_file::is_same_file;
 use std::fs;
 use std::fs::{create_dir_all, exists, DirEntry};
-use std::process::{exit, Command};
+use std::process::{Command};
 use anyhow::{bail, Context, Result};
 
 // declaration of command arguments.
@@ -37,12 +37,11 @@ fn main() -> Result<()> {
     let artwork = args.img;
 
     // create dir for modified files, if it does not exist.
-    let is_exist = exists(&dest_dir)
-        .with_context(|| format!("Directory existence check failed for path: {dest_dir}."))?;
-
-    if !is_exist {
-        create_dir_all(&dest_dir)
-            .with_context(|| format!("Directory creation failed for path: {dest_dir}"))?;
+    match exists(&dest_dir) {
+        Ok(true) => {},
+        Ok(false) => create_dir_all(&dest_dir)
+            .with_context(|| format!("Directory creation failed for path: {dest_dir}"))?,
+        _ => bail!("Directory existence check failed for path: {dest_dir}.")
     }
 
     // open src directory.
