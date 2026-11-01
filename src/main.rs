@@ -62,10 +62,10 @@ fn main() -> Result<()> {
             let dest_file = format!("{}/{}", &dest_dir, file_name);
 
             let (should_skip, skip_reason) =
-                check_if_skipping(&entry, &dest_file).context("Checking to skip error.")?;
+                check_if_skipping(&entry, &src_file, &dest_file).context("Checking to skip error.")?;
 
             if should_skip {
-                println!("{skip_reason}");
+                println!("*** Skipping: {skip_reason}");
                 continue;
             }
 
@@ -105,17 +105,17 @@ fn check_arg_values(args: &Args) -> Result<()> {
 }
 
 // check if skipping src_file is directory.
-fn check_if_skipping(entry: &DirEntry, dest_file: &str) -> Result<(bool, String)> {
+fn check_if_skipping(entry: &DirEntry, src_file: &str, dest_file: &str) -> Result<(bool, String)> {
     // check existence
     if exists(dest_file)? {
-        let ret = (true, String::from(format!("*** Skipping, \"{}\" already exists.", dest_file)));
+        let ret = (true, String::from(format!("\"{}\" already exists.", dest_file)));
         return Ok(ret);
     }
 
     // check file type
     let metadata = entry.metadata()?;
     if metadata.is_dir() {
-        let ret = (true, String::from(format!("*** Skipping, \"{}\" is directory.", dest_file)));
+        let ret = (true, String::from(format!("\"{}\" is directory.", src_file)));
         return Ok(ret);
     }
 
