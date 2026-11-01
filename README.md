@@ -1,5 +1,5 @@
 # music-artwork
-A cli for adding artwork image to music files using ffmpeg.
+A cli command for adding artwork image to music files using ffmpeg.
 So it is a ffmpeg wrapper app.
 
 ## REQUIREMENT
